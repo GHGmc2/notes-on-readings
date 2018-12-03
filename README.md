@@ -1,4 +1,4 @@
-# notes-on-readings
+# Notes on Readings
 
 ## Books
 
