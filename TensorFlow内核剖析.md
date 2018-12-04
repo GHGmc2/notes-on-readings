@@ -1,4 +1,5 @@
 # TensorFlow内核剖析
+> 基于1.2版本
 > [Github](https://github.com/horance-liu/tensorflow-internals), [视频](http://www.itdks.com/dakalive/detail/7719), [PPT](https://myslide.cn/slides/8361)
 > [视频：TensorFlow分布式原理与应用](http://www.itdks.com/dakalive/detail/4084)
 
@@ -15,42 +16,117 @@ TensorFlow 使用**节点**表示抽象的数学计算，并使用 OP 表达计�
  - 抽象设备：支持 CPU, GPU, ASIC 多种异构计算设备类型；
  - 抽象任务：基于任务的 PS，对新的优化算法和网络模型具有良好的可扩展性。
 
+## 编程环境
+
+### 代码结构
+
+ - Python
+ - Core
+ - Compiler
+ - StreamExecutor
+
+### 工程构建
+
+#### 环境准备
+
+TensorFlow 使用 C++11 语法实现。
+TensorFlow 使用 Bazel 的构建工具， 可以将其视为更高抽象的 Make 工具。
+TensorFlow 使用 Swig 构建多语言的编程环境，自动生成相关编程语言的包装器。
+
+#### 配置
+```
+$ ./configure
+```
+
+#### 构建
+```
+编译：
+$ bazel build -c opt --config=cuda tensorflow/tools/pip_package:build_pip_package
+构建Wheel包：
+$ bazel-bin/tensorflow/tools/pip_package/build_pip_package /tmp/tensorflow_pkg
+```
+
+#### 安装
+```
+$ sudo pip install /tmp/tensorflow_pkg/tensorflow-1.4.0-py2-none-any.whl
+```
+
+### 代码生成
+
+在构建 TensorFlow 系统时，Bazel 或 CMake 会自动生成部分源代码。理解代码生成器的输出结果，可以加深理解系统的行为模式。
+
 # II 系统架构
 
 ## 系统架构
 
- - Client
- - Master
- - Worker
- - Kernel
+### 系统架构
+
+ - 前端：构造计算图；
+ - 后端：提供运行时环境，负责执行计算图。
+	 - 运行时：分别提供本地模式和分布式模式，并共享大部分设计和实现。
+		 - 表达图：构造计算图，但不执行图；
+		 - 编排图：将计算图的节点以最佳的执行方案部署在集群中各个计算设备上执行；
+		 - 运行图：按照拓扑排序执行图中的节点，并启动每个 OP 的 Kernel 计算。
+	 - 计算层：由各个 OP 的 Kernel 实现组成；运行时Kernel 执行 OP 的具体数学运算;
+	 - 通信层：基于 gRPC 实现组件间的数据交换，并能够在支持 IB 网络的节点间实现 RDMA 通信;
+	 - 设备层：OP 执行的主要载体。
 
 ![](https://img2018.cnblogs.com/blog/1161096/201809/1161096-20180905150132923-1424753096.png)
 
+ - Client：执行 Session.run 将 Protobuf 格式的 GraphDef 序列化后传给 Master
+ - Master
+	 1. 反向遍历 Full Graph，依照依赖关系进行**剪枝**，得到 Client Graph；
+	 2. 将 Client Graph 按 SpiltByTask **分裂**为多个 Graph Partition（与Worker一一对应）；
+	 3. 将Graph Partition **注册**到相应 Worker；
+	 4. **通知** Worker 启动执行
+ - Worker
+	 1. 对注册的 Graph Partition （对于Worker来说也称Full Graph）按 SplitByDevice 进行**二次分裂**为多个 Graph Partition（与Device一一对应）；
+	 2. 启动所有的 Graph Partition 执行；
+	 3. 对每一个 Device，执行拓扑排序，依次**调用 OP 的 Kernel 实现**完成运算。
+对于Worker间的数据交换：
+	 - 本地 CPU 与 GPU 之间，使用 cudaMemcpyAsync 实现异步拷贝；
+	 - 本地 GPU 之间，使用端到端的 DMA 操作，避免主机端 CPU 的拷贝。
+对于任务间的通信，TensorFlow 支持多种通信协议：
+	 - gRPC over TCP；
+	 - RDMA over Converged Ethernet。
+ - Kernel：OP 在某种硬件设备的特定实现
+	 - 大多数 Kernel 基于 Eigen::Tensor 实现。TensorFlow 也可以灵活地直接使用 cuDNN, cuNCCL, cuBLAS 实现更高效的 Kernel。
+	 - TensorFlow 实现了矢量化技术；支持更高效的 Kernel 注册。
+
 ### 图控制
 
-#### 图构造
-
-#### 图执行
-
- - 图分裂
- - 子图注册
- - 子图运算：
-
-### 会话管理
+### 会话（Session）管理
 
 #### 创建会话
 
+Master 创建一个 MasterSession 实例，并用全局唯一的 handle 标识。
+
 #### 迭代运行
 
- - 注册子图
- - 运行子图
- - 交换数据
+![](http://images2.imagebam.com/be/17/21/7795aa1052279074.png)
+
+ - 注册子图：每个子图使用 graph_handle 唯一标识。
+ - 运行子图：Worker 根据 graph_handle 索引相应的子图。每个子图放置在单独的 Executor 中执行。
+ - 交换数据：Device间通过插入 Send/Recv 节点完成；Worker间需要通过接收端主动发送 RecvTensorRequest 消息到发送方，再从发送方的信箱里取出对应的 Tensor，并通过 RecvTensorResponse 返回。
 
 #### 关闭会话
 
 ## C API：分水岭
+> 会话生命周期源码解读
 
-Swig代码生成
+### Swig
+
+TensorFlow 使用 Bazel 的构建工具，在系统编译之前启动 Swig 的代码生成过程，通过 tensorflow.i 自动生成了两个适配 (Wrapper) 文件:
+
+ - pywrap_tensorflow_internal.py：负责对接上层 Python 调用；
+ - pywrap_tensorflow_internal.cc：负责对接下层 C API 调用。
+
+pywrap_tensorflow_internal.py 模块首次被导入时，自动地加载 _pywrap_tensorflow_internal.so 的动态链接库，其中包含了整个 TensorFlow 运行时的所有符号。
+在 pywrap_tensorflow_internal.cc 的实现中， 静态注册了一个**函数符号表**，实现了 Python 函数名到 C 函数名的二元关系。
+
+### 会话控制
+
+在实际运行时环境中，tensorflow::Session 可能存在多种实现。例如，DirectSession 负责本地模式的会话控制。而 GrpcSession 负责基于 gRPC 协议的分布式模式的会话控制。
 
 ### 会话生命周期
 
@@ -66,6 +142,7 @@ Swig代码生成
  - 消除序列化：在图的构造器，前端 Python 在构造每个 OP 时，直接通过 C API 将其追加至后端 C++ 的图实例中，从而避免了图实例在前后端的序列化和反序列化的开销。
 
 # III 编程模型
+> 领域模型源码解读
 
 ## 计算图Graph
 
@@ -151,6 +228,7 @@ Coordinator 提供了一种同时停止一组线程执行的简单机制。它�
 OP 的注册是通过 REGISTER_OP 宏完成的。
 
 # IV 运行模型
+> 执行过程源码解读
 
 ## 本地执行
 
@@ -182,7 +260,7 @@ DirectSession::Run 执行时，首先完成 ClientGraph 的构造：主要完成
 
  1. 追加输入节点
  2. 追加输出节点
- 3. 反向剪枝：DAG 反向的宽度优先遍历
+ 3. 反向剪枝：DAG 反向的广度优先遍历
 
 经过剪枝后，将形成若干 DAG 子图。将入度为 0 的节点，与 Source 节点通过控制依赖边相连接；出度为 0 的节点，与 Sink 节点通过控制依赖边相连接，最终形成一个完整的 DAG 图。
 
@@ -297,6 +375,8 @@ GrpcServer::Init 将完成 GrpcServer 领域对象的初始化， 主要包括�
  3. 关闭 WorkerSession
 
 ### 创建会话
+
+在 Client 端创建 GrpcSession 实例，在 Master 端创建 MasterSession 实例；在各个 Worker 上创建 WorkerSession 实例，三者通过 MasterSession 的 session_handle 实现协同。
 
 ### 迭代执行
 
