@@ -150,7 +150,7 @@ Automating the process of fetching(downloading and loading) the data with small 
 
 #### Take a Quick Look at the Data Structure
 
-pandas methods:
+**pandas** methods:
 
  - head(): look at the top five rows
  - info(): get a quick description
@@ -172,66 +172,184 @@ Ensure that the test set will remain consistent across multiple runs, even if yo
 
 #### Data Cleaning
 
+[API design for machine learning software: experiences from the scikit-learn project](https://arxiv.org/pdf/1309.0238v1.pdf)
+
+ - Consistency
+	 - Estimators
+	 - Transformers
+	 - Predictors
+ - Inspection
+ - Nonproliferation
+ - Composition
+ - Sensible defaults
+
 #### Feature Scaling
 
-### Select a model and train it
+ - Min-max scaling (normalization): values are shifted and rescaled so that they end up ranging from 0 to 1.
+ - Standardization: first it subtracts the mean value, and then it divides by the variance so that the resulting distribution has unit variance. Standardization is much less affected by outliers.
 
-#### Better Evaluation Using Cross-Validation
+Fit the scalers to the training data only, not to the full dataset (including the test set).
+
+### Select a model and train it
 
 ### Fine-tune your model
 
 #### Grid Search
 
+Scikit-Learn’s GridSearchCV will evaluate all the possible combinations of hyperparameter values, using cross-validation.
+The grid search approach is fine when you are exploring **relatively few combinations**.
+
 #### Randomized Search
+
+When the hyperparameter **search space is large**, it is often preferable to use RandomizedSearchCV. It evaluates a given number of random combinations by selecting a random value for each hyperparameter at every iteration.
 
 #### Ensemble Methods
 
+Combine the models that perform best.
+
 ### Launch, monitor, and maintain your system
+
+Write monitoring code to check your **system’s live performance** at regular intervals and trigger alerts when it drops.
+Models tend to “rot” as data evolves over time, unless the models are regularly trained on fresh data.
+
+Plug the human evaluation pipeline into your system. Evaluating your system’s performance will require sampling the system’s predictions and evaluating them.
+
+Make sure you evaluate the system’s input data quality. Monitoring the inputs is particularly important for online learning systems.
+
+Train your models on a regular basis using fresh data. You should automate this process as much as possible. If your system is an online learning system, you should make sure you save snapshots of its state at regular intervals so you can easily roll back to a previously working state.
+
+### Try it out
+
+It is probably preferable to be comfortable with the overall process and know three or four algorithms well rather than to spend all your time exploring advanced algorithms and not enough time on the overall process.
 
 ## Classification
 
-### Training a Binary Classifier
-
 ### Performance Measures
 
-#### Measuring Accuracy Using Cross-Validation
+#### Cross-Validation
 
 #### Confusion Matrix
 
+$$
+precision=\frac{TP}{TP+FP}, recall=\frac{TP}{TP+FN}
+$$
+
 #### Precision and Recall
+
+$$
+F_1 = \frac{2}{\frac{1}{precision} + \frac{1}{recall}} = \frac{TP}{TP + \frac{FN + FP}{2}}
+$$
 
 #### Precision/Recall Tradeoff
 
+decision threshold
+
 #### The ROC Curve
 
+Receiver operating characteristic (ROC) curve plots the true positive rate (another name for recall) against the false positive rate. (sensitivity (recall) vs. 1 – specificity)
+
+Area under the curve (AUC)
+
 ### Multiclass Classification
+
+strategies to perform multiclass classification using multiple binary classifiers:
+
+ - one-versus-all (OvA), also called one-versus-the-rest: 
+ - one-versus-one (OvO): 
+
+Some algorithms scale poorly with the size of the training set, so for these algorithms OvO is preferred since it is faster to train many classifiers on small training sets than training few classifiers on large training sets. For most binary classification algorithms, however, OvA is preferred.
 
 ### Error Analysis
 
 ### Multilabel Classification
 
+Multilabel classification system: outputs multiple binary labels.
+
 ### Multioutput Classification
+
+Multioutput-multiclass classification (or simply multioutput classification): it is simply a generalization of multilabel classification where each label can be multiclass.
 
 ## Training Models
 > [safari book](https://www.oreilly.com/library/view/hands-on-machine-learning/9781491962282/ch04.html)
 
 ### Linear Regression
 
+#### The normal equation
+
+$$
+\hat \theta=(X^T\cdot X)^{-1}\cdot X^T\cdot \bm y
+$$
+where $\hat \theta$ is the value of $\theta$ that minimizes the cost function, $\bm y$ is the vector of target values containing $y^{(1)}$ to $y^{(m)}$.
+
+#### Computational Complexity
+
 ### Gradient Descent
 
 #### Batch Gradient Descent
 
+Computing the gradients based on the full training set.
+
 #### Stochastic Gradient Descent
+
+SGD just picks a random instance in the training set at every step and computes the gradients based only on that single instance.
+
+Randomness is **good to escape from local optima**, but bad because it means that the algorithm can never settle at the minimum. One solution to this dilemma is to **gradually reduce the learning rate** (**Simulated annealing**). The function that determines the learning rate at each iteration is called the Learning schedule.
 
 #### Mini-batch Gradient Descent
 
+Computes the gradients on small random sets of instances called mini- batches.
+The main advantage of Mini-batch GD over Stochastic GD is that you can **get a performance boost from hardware optimization of matrix operations**.
+
+[Comparison of algorithms for Linear Regression](https://www.oreilly.com/library/view/hands-on-machine-learning/9781491962282/ch04.html#linear_regression_algorithm_comparison)
+
 ### Polynomial Regression
+
+Add powers of each feature as new features, then train a linear model on this extended set of features.
 
 ### Learning Curves
 
+Learning curves are plots of the **model’s performance on the training set and the validation set** as a function of the training set size.
+
+**The Bias/Variance Tradeoff**
+A model’s generalization error can be expressed as the sum of three very different errors:
+
+ - Bias: due to **wrong assumptions**. A high-bias model is most likely to **underfit** the training data.
+ - Variance: due to the model’s **excessive sensitivity to small variations** in the training data. A model with many degrees of freedom is likely to have high variance, and thus to **overfit** the training data.
+ - Irreducible error: due to the **noisiness of the data** itself. The only way to reduce this part of the error is to clean up the data.
+
+Increasing a model’s complexity will typically increase its variance and reduce its bias. Conversely, reducing a model’s complexity increases its bias and reduces its variance.
+
 ### Regularized Linear Models
 
+#### Ridge Regression
+
+#### Lasso Regression
+
+#### Elastic Net
+
+#### Early Stopping
+
+Stop training as soon as the validation error reaches a minimum. (stop only after the validation error has been above the minimum for some time, then roll back the model parameters to the point where the validation error was at a minimum)
+
 ### Logistic Regression
+
+Logistic Regression is commonly used to estimate the **probability** that an instance belongs to a particular class.
+
+Decision boundaries
+
+#### Softmax Regression
+
+When given an instance $x$, the Softmax Regression model first computes a score $s_k(x)$ for each class $k$, then estimates the probability of each class by applying the softmax function (also called the normalized exponential) to the scores.
+
+Softmax function:
+$$
+\hat p_k = \frac{exp(s_k(x))}{\sum_{j=1}^{K}exp(s_j(x))}
+$$
+where $K$ is the number of classes.
+
+The Softmax Regression classifier predicts only one class at a time.
+
+Cross entropy: 
 
 ## SVM
 
@@ -241,15 +359,45 @@ Ensure that the test set will remain consistent across multiple runs, even if yo
 
 ## Dimensionality Reduction
 
+Reducing dimensionality does lose some information, so even though it will speed up training, it may also make your system perform slightly worse. It also makes your pipelines a bit more complex and thus harder to maintain.
+
+### The Curse of Dimensionality
+
+The more dimensions the training set has, the greater the risk of **overfitting** it.
+
+High-dimensional datasets are at risk of being very sparse: most training instances are likely to be far away from each other.
+
 ### Main Approaches for Dimensionality Reduction
 
+#### Projection
+
+In most real-world problems, training instances are not spread out uniformly across all dimensions. As a result, all training instances actually lie within (or close to) a much lower-dimensional subspace of the high-dimensional space.
+
+#### Manifold Learning
+
+A $d$-dimensional **manifold** is a part of an $n$-dimensional space (where $d < n$) that locally resembles a $d$-dimensional hyperplane.
+
+Many dimensionality reduction algorithms work by **modeling the manifold on which the training instances lie**; this is called Manifold Learning.
+It relies on the manifold **assumption** (also called the manifold hypothesis), which holds that **most real-world high-dimensional datasets lie close to a much lower-dimensional manifold**.
+
 ### PCA (Principal Component Analysis)
+
+First it identifies the hyperplane that lies closest to the data, and then it projects the data onto it.
+
+TODO.
 
 ### Kernel PCA
 
 ### LLE (Locally Linear Embedding)
 
+First measuring how each training instance linearly relates to its closest neighbors, and then looking for a low-dimensional representation of the training set where these local relationships are best preserved.
+
 ### Other Dimensionality Reduction Techniques
+
+ - Multidimensional Scaling (MDS)
+ - Isomap
+ - t-Distributed Stochastic Neighbor Embedding (t-SNE)
+ - Linear Discriminant Analysis (LDA)
 
 # Neural Networks and Deep Learning
 
@@ -257,15 +405,87 @@ Ensure that the test set will remain consistent across multiple runs, even if yo
 
 ## Introduction to Artificial Neural Networks
 
+### From Biological to Artificial Neurons
+
+#### Multi-Layer Perceptron and Backpropagation
+
+activation functions:
+
+ - logistic function: $\sigma(z) = 1 / (1 + exp(–z))$
+ - hyperbolic tangent function: $tanh(z) = 2\sigma(2z)–1$
+ - ReLU function: $ReLU(z) = max(0, z)$
+
 ## Training Deep Neural Nets
 
 ### Vanishing/Exploding Gradients Problems
 
+[Understanding the difficulty of training deep feedforward neural networks](http://proceedings.mlr.press/v9/glorot10a/glorot10a.pdf)
+We need the **variance** of the outputs of each layer to be equal to the variance of its inputs, and we also need the **gradients** to have equal variance before and after flowing through a layer in the reverse direction.
+
+#### Xavier and He Initialization
+
+Normal distribution with mean 0 and standard deviation $\sigma = \sqrt \frac{2}{n_{inputs} + n_{outputs}}$
+Or a uniform distribution between $‐r$ and $+r$, with $r = \sqrt \frac{6}{n_{inputs} + n_{outputs}}$
+
+#### Nonsaturating Activation Functions
+
+leaky ReLU
+
+ - randomized leaky ReLU (RReLU)
+ - parametric leaky ReLU (PReLU)
+
+ELU(exponential linear unit):
+
+Which activation function should you use for the hidden layers of your deep neural networks?
+In general, ELU > leaky ReLU (and its variants) > ReLU > tanh > logistic.
+
+ - If you care a lot about runtime performance, then you may prefer leaky ReLUs over ELUs.
+ - RReLU if your network is overfitting
+ - PReLU if you have a huge training set
+
+#### Batch Normalization
+
+Let the model learn the optimal scale and mean of the **inputs** for each layer: adding an operation in the model just before the activation function of each layer, simply **zero-centering and normalizing the inputs, then scaling and shifting the result** using two new parameters per layer (one for scaling, the other for shifting).
+
+#### Gradient Clipping
+
+A popular technique to lessen the **exploding** gradients problem is to simply clip the gradients during backpropagation so that they never exceed some threshold (this is mostly useful for **RNN**).
+
 ### Reusing Pretrained Layers
+
+#### Model Zoos
+
+#### Unsupervised Pretraining
+
+**Train the layers one by one**, starting with the lowest layer and then going up, using an **unsupervised feature detector algorithm** such as Restricted Boltzmann Machines (RBMs) or autoencoders. Each layer is trained on the output of the previously trained layers.
+Once all layers have been trained this way, you can **fine-tune** the network using **supervised** learning.
+
 
 ### Faster Optimizers
 
+You should almost always use Adam optimization.
+
+#### Momentum optimization
+
+Momentum optimization cares a great deal about what previous gradients were.
+
+#### Adam(adaptive moment estimation) Optimization
+
+It keeps track of an **exponentially decaying average of past gradients** and an **exponentially decaying average of past squared gradients**.
+
+#### Learning Rate Scheduling
+
 ### Avoiding Overfitting Through Regularization
+
+#### Early Stopping
+
+#### l~1~ and l~2~ Regularization
+
+#### Dropout
+
+#### Max-Norm Regularization
+
+#### Data Augmentation
 
 ### Practical Guidelines
 
@@ -473,7 +693,21 @@ Ways to reduce the effect of stale gradients:
 
 ### Convolutional Layer
 
+#### Filters(convolution kernels)
+
+#### Stacking Multiple Feature Maps
+
+Within one feature map, all neurons share the same parameters (weights and bias term), but different feature maps may have different parameters.
+
 ### Pooling Layer
+
+Their goal is to **subsample** the input image in order to reduce the computational load, the memory usage, and the number of parameters(thereby limiting the risk of overfitting). It also makes the neural network tolerate a little bit of image shift (location invariance).
+
+A pooling neuron has no weights, all it does is aggregate the inputs using an aggregation function such as the max or mean.
+
+Only the max input value in each pooling kernel makes it to the next layer. The other inputs are dropped.
+
+A pooling layer typically works on every input channel independently, so the output depth is the same as the input depth.
 
 ### CNN Architectures
 
