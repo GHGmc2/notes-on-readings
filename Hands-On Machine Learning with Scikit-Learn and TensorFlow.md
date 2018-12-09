@@ -321,11 +321,24 @@ Increasing a model’s complexity will typically increase its variance and reduc
 
 ### Regularized Linear Models
 
-#### Ridge Regression
+For a linear model, regularization is typically achieved by constraining the weights ($\theta$) of the model.
 
-#### Lasso Regression
+The regularization term should only be added to the cost function **during training**. Once the model is trained, you want to evaluate the model’s performance using the unregularized performance measure.
+
+#### Ridge Regression（岭回归）
+
+regularization term: $\alpha \sum_{i=1}^{n}\theta_i^2$
+
+#### Lasso Regression（套索回归）
+
+regularization term: $\alpha \sum_{i=1}^n|\theta_i|$
 
 #### Elastic Net
+
+Elastic Net is a middle ground between Ridge Regression and Lasso Regression(you can control the mix ratio $r$).
+$$
+J(\theta)=MSE(\theta) + r\alpha \sum_{i=1}^n |\theta_i| + \frac{1-r}{2}\alpha
+\sum_{i=1}^n\theta_i^2$$
 
 #### Early Stopping
 
@@ -335,9 +348,22 @@ Stop training as soon as the validation error reaches a minimum. (stop only afte
 
 Logistic Regression is commonly used to estimate the **probability** that an instance belongs to a particular class.
 
-Decision boundaries
+#### Estimating Probabilities
+
+Logistic Regression model estimated probability: $\hat p = \sigma(\theta^T \cdot x)$, where $\sigma(t) = \frac{1}{1+exp(-t)}$.
+
+#### Training and Cost Function
+
+Logistic Regression cost function (log loss):
+$$
+J(\theta) = -\frac{1}{m} \sum_{i=1}^m[y^{(i)}\log (\hat p^{(i)}) + (1-y^{(i)})\log (1-\hat p^{(i)})]
+$$
+
+#### Decision boundaries
 
 #### Softmax Regression
+
+The Logistic Regression model can be generalized to **support multiple classes directly**, without having to train and combine multiple binary classifiers. This is called Softmax Regression, or Multinomial Logistic Regression.
 
 When given an instance $x$, the Softmax Regression model first computes a score $s_k(x)$ for each class $k$, then estimates the probability of each class by applying the softmax function (also called the normalized exponential) to the scores.
 
@@ -347,9 +373,10 @@ $$
 $$
 where $K$ is the number of classes.
 
-The Softmax Regression classifier predicts only one class at a time.
+The Softmax Regression classifier **predicts only one class at a time**.
 
-Cross entropy: 
+**Cross entropy** is frequently used to measure how well a set of estimated class probabilities match the target classes.
+Cross entropy cost function: $J(\Theta) = -\frac{1}{m} \sum_{i=1}^m \sum_{k=1}^K y_k^{(i)} \log (\hat p_k^{(i)})$, where $\Theta$ is the parameter matrix.
 
 ## SVM
 
@@ -381,23 +408,65 @@ Many dimensionality reduction algorithms work by **modeling the manifold on whic
 It relies on the manifold **assumption** (also called the manifold hypothesis), which holds that **most real-world high-dimensional datasets lie close to a much lower-dimensional manifold**.
 
 ### PCA (Principal Component Analysis)
+> the most popular dimensionality reduction algorithm.
 
 First it identifies the hyperplane that lies closest to the data, and then it projects the data onto it.
 
-TODO.
+#### Preserving the Variance
 
-### Kernel PCA
+ - select the axis that preserves the maximum amount of variance, as it will most likely lose less information than the other projections.
+ - select the axis that minimizes the mean squared distance between the original dataset and its projection onto that axis.
+
+#### Principal Components
+
+PCA identifies the axis that accounts for the largest amount of variance in the train‐ ing set.
+
+The **unit vector that defines the i^th^ axis** is called the i^th^ principal component (PC).
+
+The direction of the principal components is not stable. However, PCs will generally still lie on the same axes.
+
+Singular Value Decomposition (SVD) can decompose the training set matrix $X$ into the dot product of three matrices $U \cdot \sum \cdot V^T$, where $V^T$ contains all the principal components that we are looking for.
+
+#### Projecting Down to d Dimensions
+
+Projecting the training set down to d dimensions: $X_{d-proj}=X \cdot W_d$, where  $X_d$ is the matrix containing the first $d$ principal components (i.e., the matrix composed of the first $d$ columns of $V^T$).
+
+#### PCA for Compression
+
+PCA inverse transformation, back to the original number of dimensions: $X_{recovered} = X_{d-proj} \cdot W_d^T$
+
+#### Incremental PCA
+
+The preceding implementation of PCA requires the whole training set to fit in memory in order for the SVD algorithm to run.
+
+**Incremental PCA (IPCA)** algorithms have been developed: you can split the training set into mini-batches and feed an IPCA algorithm one **mini-batch** at a time. This is useful for large training sets, and also to apply PCA online.
+
+#### Randomized PCA
+
+It is a stochastic algorithm that quickly finds an approximation of the first $d$ principal components. It is dramatically faster than the previous algorithms when $d$ is much smaller than $n$.
+
+### Kernel PCA (kPCA)
+
+It is often good at preserving clusters of instances after projection, or sometimes even unrolling datasets that lie close to a twisted manifold.
+
+#### Selecting a Kernel and Tuning Hyperparameters
+
+kPCA is an unsupervised learning algorithm, there is no obvious performance measure.
+
+Since Dimensionality reduction is often a preparation step for a **supervised** learning task, so you can simply use **grid search** to select the kernel and hyper‐parameters that lead to the best performance on that task.
+Another approach (entirely **unsupervised**), is to select the kernel and hyper‐parameters that yield the **lowest reconstruction error**.
+
 
 ### LLE (Locally Linear Embedding)
 
-First measuring how each training instance linearly relates to its closest neighbors, and then looking for a low-dimensional representation of the training set where these local relationships are best preserved.
+First measuring how each training instance linearly relates to its closest neighbors, and then **looking for a low-dimensional representation of the training set where these local relationships are best preserved**.
 
 ### Other Dimensionality Reduction Techniques
 
  - Multidimensional Scaling (MDS)
  - Isomap
  - t-Distributed Stochastic Neighbor Embedding (t-SNE)
- - Linear Discriminant Analysis (LDA)
+ - Linear Discriminant Analysis (LDA): during training it learns the most discriminative axes between the classes, and these axes can then be used to define a hyperplane onto which to project the data. The **benefit** is that the projection will keep classes as far apart as possible, so LDA is a good technique to **reduce dimensionality before running another classification algorithm** such as an SVM classifier.
 
 # Neural Networks and Deep Learning
 
@@ -720,9 +789,22 @@ A pooling layer typically works on every input channel independently, so the out
 
 ### Recurrent Neurons
 
-### Training RNNs
+time step(frame)
+
+unrolling the network through time
+
+Many researchers prefer to use the hyperbolic tangent (tanh) activation function in RNNs rather than the ReLU activation function.
+
+#### Memory Cells
+
+#### Input and Output Sequences
 
 ### Deep RNNs
+
+encoder: a sequence-to-vector network
+decoder: a vector-to-sequence network
+
+#### The Difficulty of Training over Many Time Steps
 
 ### LSTM Cell
 
