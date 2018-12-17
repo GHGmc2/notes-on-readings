@@ -52,7 +52,7 @@
 
 ## 基础概念
 
-### 编程范式：数据流图Dataflow Graph
+### 编程范式：数据流图Graph
 
  - 节点Node
 	 - 计算节点Operation
@@ -62,6 +62,9 @@
 	 - 数据边：传输数据
 	 - 控制边：定义控制依赖
 
+基于SGD优化求解的机器学习问题，通常都可以分为前向图求值与后向图求梯度两个计算阶段。其中**前向图由用户编写代码完成，后向图由优化器自动生成**。
+![](http://www.tensorfly.cn/images/tensors_flowing.gif)
+
 执行原理
 
  1. 以**节点名称为K，入度为V**，创建散列表并将数据流图上节点放入散列表；
@@ -70,8 +73,6 @@
  4. 重复步骤2和3，直到可执行队列为空
 
 先编译得到完整的数据流图，然后根据用户选择的子图，输入数据进行计算。因此可以实现预编译优化。
-
-![](http://www.tensorfly.cn/images/tensors_flowing.gif)
 
 ### 数据载体：张量
 
@@ -325,7 +326,12 @@ TensorFlowOnSpark
 
 [NCCL: Optimized primitives for collective multi-GPU communication](https://github.com/NVIDIA/nccl)
 
-[tensorflow-allreduce](https://github.com/baidu-research/tensorflow-allreduce)
+
+ring-allreduce，两个步骤：
+> [tensorflow-allreduce](https://github.com/baidu-research/tensorflow-allreduce)
+
+ 1. scatter-reduce
+ 2. allgather
 
 ## TPU及ASIC
 
