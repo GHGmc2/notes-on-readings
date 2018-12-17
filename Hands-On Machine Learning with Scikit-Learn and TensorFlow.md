@@ -1,7 +1,7 @@
 # Hands-On Machine Learning with Scikit-Learn and TensorFlow
 > [主页](http://shop.oreilly.com/product/0636920052289.do), [勘误](https://www.oreilly.com/catalog/errata.csp?isbn=0636920052289)
 > [Github](https://github.com/ageron/handson-ml), [Jupyter Viewer](https://nbviewer.jupyter.org/github/ageron/handson-ml/blob/master/index.ipynb), [中文注释](https://github.com/DeqianBai/Hands-on-Machine-Learning)
-> [douban](https://book.douban.com/subject/30317874/)
+> [douban](https://book.douban.com/subject/26840215/)
 > [中文翻译](https://github.com/apachecn/hands_on_Ml_with_Sklearn_and_TF)
 
 ## Preface
@@ -717,11 +717,15 @@ It also works perfectly if you host a web service that receives a large number o
 
 #### In-Graph Versus Between-Graph Replication
 
+Two major approaches to handling a neural network **ensemble**(produce the ensemble’s prediction):
+
  - **in-graph replication**: create one big graph, containing every neural network
+	 - just create one session
 	 - simpler to implement since you don’t have to manage multiple clients and multiple queues
  - **between-graph replication**: create one **separate graph for each neural network** and handle synchronization between these graphs yourself
 	 - easier to organize into well-bounded and easy-to-test modules. Moreover, it gives you more flexibility.
 	 - one typical implementation is to **coordinate the execution of these graphs using queues**
+	 - a set of clients handles one neural network each + one last client is in charge of reading one prediction from each prediction queue and aggregating them to produce the ensemble’s prediction
 
 #### Model Parallelism
 
@@ -755,6 +759,16 @@ Ways to reduce the effect of stale gradients:
 [REVISITING DISTRIBUTED SYNCHRONOUS SGD](https://arxiv.org/pdf/1604.00981v2.pdf) found that **data parallelism with synchronous updates using a few spare replicas was the most efficient**.
 
 **Bandwidth saturation**
+
+For models relatively small and trained on a very large training set, you are often better off training the model on a single machine with a single GPU.
+
+Saturation is more severe for large dense models.
+
+A few simple steps to reduce the saturation problem:
+
+ - Group your GPUs on a few servers rather than scattering them across many servers.
+ - Shard the parameters across multiple parameter servers
+ - Drop the model parameters’ float precision. This will cut the amount of data to transfer, without much impact on the convergence rate or the model’s performance.
 
 ## CNN
 
