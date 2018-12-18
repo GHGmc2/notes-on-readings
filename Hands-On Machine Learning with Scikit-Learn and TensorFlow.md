@@ -513,8 +513,25 @@ In general, ELU > leaky ReLU (and its variants) > ReLU > tanh > logistic.
  - PReLU if you have a huge training set
 
 #### Batch Normalization
+> [Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift](https://arxiv.org/pdf/1502.03167.pdf)
 
-Let the model learn the optimal scale and mean of the **inputs** for each layer: adding an operation in the model just before the activation function of each layer, simply **zero-centering and normalizing the inputs, then scaling and shifting the result** using two new parameters per layer (one for scaling, the other for shifting).
+The **Internal Covariate Shift** problem: the distribution of each layer’s inputs changes during training, as the parameters of the previous layers change.
+
+BN lets the model **learn the optimal scale and mean of the inputs for each layer**:
+
+ - adding an operation in the model just **before the activation function of each layer**, simply **zero-centering and normalizing the inputs**
+ - **scaling and shifting the result** using two new parameters per layer (one for scaling, the other for shifting).
+
+Benefits:
+
+ - the vanishing gradients problem was strongly reduced.
+ - The networks were also much less sensitive to the weight initialization. They were able to use much larger learning rates, significantly speeding up the learning process.
+ - acts like a regularizer, reducing the need for other regularization techniques such as dropout.
+
+Limits:
+
+ - add some complexity to the model.
+ - the neural network makes slower **predictions** due to the extra computations required at each layer.
 
 #### Gradient Clipping
 
