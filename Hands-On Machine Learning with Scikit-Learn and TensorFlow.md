@@ -271,6 +271,7 @@ Multioutput-multiclass classification (or simply multioutput classification): it
 
 ## Training Models
 > [safari book](https://www.oreilly.com/library/view/hands-on-machine-learning/9781491962282/ch04.html)
+> [jupyter notebook](https://nbviewer.jupyter.org/github/ageron/handson-ml/blob/master/04_training_linear_models.ipynb)
 
 ### Linear Regression
 
@@ -517,12 +518,26 @@ First measuring how each training instance linearly relates to its closest neigh
 # Neural Networks and Deep Learning
 
 ## Up and Running with TensorFlow
+> [jupyter notebook](https://nbviewer.jupyter.org/github/ageron/handson-ml/blob/master/09_up_and_running_with_tensorflow.ipynb)
+
+### Lifecycle of a Node Value
+
+All node values are dropped between graph runs, except variable values, which are maintained by the session across graph runs.
+
+In single-process TensorFlow, multiple sessions do not share any state, even if they reuse the same graph (each session would have its own copy of every variable).
+In distributed TensorFlow, variable state is stored on the servers, not in the sessions, so multiple sessions can share the same variables.
+
+### Implementing Gradient Descent
+
+TensorFlow uses **reverse-mode autodiff**, which is perfect (efficient and accurate) when there are many inputs and few outputs, as is often the case in neural networks.
 
 ## Introduction to Artificial Neural Networks
 
 ### From Biological to Artificial Neurons
 
 #### Multi-Layer Perceptron and Backpropagation
+
+For each training instance the **BP algorithm** first makes a prediction (forward pass), measures the error, then goes through each layer in reverse to measure the error contribution from each connection (reverse pass), and finally slightly tweaks the connection weights to reduce the error (Gradient Descent step).
 
 activation functions:
 
@@ -535,7 +550,7 @@ activation functions:
 ### Vanishing/Exploding Gradients Problems
 
 [Understanding the difficulty of training deep feedforward neural networks](http://proceedings.mlr.press/v9/glorot10a/glorot10a.pdf)
-We need the **variance** of the outputs of each layer to be equal to the variance of its inputs, and we also need the **gradients** to have equal variance before and after flowing through a layer in the reverse direction.
+We need the **variance** of the **outputs** of each layer to be equal to the variance of its **inputs**, and we also need the **gradients** to have **equal variance** before and after flowing through a layer in the reverse direction.
 
 #### Xavier and He Initialization
 
@@ -544,12 +559,25 @@ Or a uniform distribution between $‐r$ and $+r$, with $r = \sqrt \frac{6}{n_{i
 
 #### Nonsaturating Activation Functions
 
-leaky ReLU
+Leaky ReLU = $max(\alpha z, z)$ ($\alpha$ typically set to 0.01)
 
  - randomized leaky ReLU (RReLU)
  - parametric leaky ReLU (PReLU)
 
-ELU(exponential linear unit):
+**ELU(exponential linear unit)** activation function:
+$$
+ELU_{ \alpha}(z)=
+\begin{cases}
+ \alpha(e^z-1), &\text{z<0} \\
+ z, &\text{z>=0}
+\end{cases}
+$$
+
+ - it takes on negative values when $z < 0$, which allows the unit to have an average output closer to 0. This helps alleviate the vanishing gradients problem. The hyperparameter $\alpha$ is usually set to 1.
+ - it has a nonzero gradient for $z < 0$, which avoids the dying units issue.
+ - the function is smooth everywhere, which helps speed up Gradient Descent
+
+The main **drawback** of the ELU activation function is that it is slower to compute than the ReLU and its variants (due to the use of the exponential function), but during training this is compensated by **the faster convergence rate**.
 
 Which activation function should you use for the hidden layers of your deep neural networks?
 In general, ELU > leaky ReLU (and its variants) > ReLU > tanh > logistic.
@@ -568,11 +596,13 @@ BN lets the model **learn the optimal scale and mean of the inputs for each laye
  - adding an operation in the model just **before the activation function of each layer**, simply **zero-centering and normalizing the inputs**
  - **scaling and shifting the result** using two new parameters per layer (one for scaling, the other for shifting).
 
-Benefits:
+Batch Normalization algorithm: TODO.
 
- - the vanishing gradients problem was strongly reduced.
- - The networks were also much less sensitive to the weight initialization. They were able to use much larger learning rates, significantly speeding up the learning process.
- - acts like a regularizer, reducing the need for other regularization techniques such as dropout.
+**Benefits**:
+
+ - strongly **reducing the vanishing gradients problem**
+ - the networks were also **much less sensitive to the weight initialization**. They were able to use much larger learning rates, significantly speeding up the learning process.
+ - acts like a regularizer, **reducing the need for other regularization techniques** such as dropout.
 
 Limits:
 
@@ -581,9 +611,17 @@ Limits:
 
 #### Gradient Clipping
 
-A popular technique to lessen the **exploding** gradients problem is to simply clip the gradients during backpropagation so that they never exceed some threshold (this is mostly useful for **RNN**).
+A popular technique to **lessen the exploding gradients problem** is to simply clip the gradients during backpropagation so that they **never exceed some threshold** (this is mostly useful for **RNN**).
 
 ### Reusing Pretrained Layers
+
+**Transfer learning** will work only well if the inputs have similar low-level features.
+
+#### Freezing the Lower Layers
+
+#### Caching the Frozen Layers
+
+#### Tweaking, Dropping, or Replacing the Upper Layers
 
 #### Model Zoos
 
@@ -592,6 +630,9 @@ A popular technique to lessen the **exploding** gradients problem is to simply c
 **Train the layers one by one**, starting with the lowest layer and then going up, using an **unsupervised feature detector algorithm** such as Restricted Boltzmann Machines (RBMs) or autoencoders. Each layer is trained on the output of the previously trained layers.
 Once all layers have been trained this way, you can **fine-tune** the network using **supervised** learning.
 
+#### Pretraining on an Auxiliary Task
+
+max margin learning
 
 ### Faster Optimizers
 
@@ -607,6 +648,9 @@ It keeps track of an **exponentially decaying average of past gradients** and an
 
 #### Learning Rate Scheduling
 
+ - Performance scheduling
+ - Exponential scheduling
+
 ### Avoiding Overfitting Through Regularization
 
 #### Early Stopping
@@ -615,13 +659,25 @@ It keeps track of an **exponentially decaying average of past gradients** and an
 
 #### Dropout
 
+At every training step, every neuron (including the input neurons but excluding the output neurons) has a probability $p$ (typically set to 50%) of being **temporarily** “dropped out”, but it may be active during the next step.
+
+Neurons end up being less sensitive to slight changes in the inputs. In the end you get a more robust network that generalizes better.
+A unique neural network is generated at each training step. The resulting neural network can be seen as an averaging **ensemble** of all these smaller neural networks.
+
+We need to multiply each input connection weight by the keep probability $(1 – p)$ after training.
+
+Dropout does tend to significantly slow down convergence, but it usually results in a much better model when tuned properly.
+
 #### Max-Norm Regularization
+
+For each neuron, it constrains the weights $w$ of the incoming connections.
 
 #### Data Augmentation
 
 ### Practical Guidelines
 
 ## Distributing TensorFlow Across Devices and Servers
+> [jupyter nootbook](https://nbviewer.jupyter.org/github/ageron/handson-ml/blob/master/12_distributed_tensorflow.ipynb)
 
 ### Multiple Devices on a Single Machine
 
@@ -675,9 +731,9 @@ graph
  - node (op)
  - edge (dependency)
 
-When TensorFlow runs a graph, it starts by finding out the list of nodes that need to be evaluated, and it counts how many dependencies each of them has. Then it starts evaluating the nodes with zero dependencies.
+When TensorFlow runs a graph, it starts by finding out the list of nodes that need to be evaluated, and it counts how many dependencies each of them has. Then it **starts evaluating the nodes with zero dependencies**.
 
-TensorFlow manages a thread pool on each device to parallelize operations. These are called the **inter-op thread pools**.
+TensorFlow **manages a thread pool on each device** to parallelize operations. These are called the **inter-op thread pools**.
 Some operations have multi‐ threaded kernels: they can use other thread pools (one per device) called the **intra-op thread pools**.
 
 #### Control Dependencies
@@ -771,16 +827,16 @@ the Coordinator class and the QueueRunner class
 
 #### One Neural Network per Device
 
-**The speedup is almost linear.**
+The **speedup is almost linear.**
 
 This solution is **perfect for hyperparameter tuning**: each device in the cluster will train a different model with its own set of hyperparameters.
 
-It also works perfectly if you host a web service that receives a large number of queries per second (QPS) and you need your neural network to **make a prediction for each query**.
+It also works **perfectly if you host a web service** that receives a large number of queries per second (QPS) and you need your neural network to **make a prediction for each query**.
 [TensorFlow Serving: for model deployment in production](https://www.tensorflow.org/serving/)
 
 #### In-Graph Versus Between-Graph Replication
 
-Two major approaches to handling a neural network **ensemble**(produce the ensemble’s prediction):
+Two major approaches to handling a neural network **ensemble** (produce the ensemble’s prediction):
 
  - **in-graph replication**: create one big graph, containing every neural network
 	 - just create one session
@@ -829,9 +885,9 @@ Saturation is more severe for large dense models.
 
 A few simple steps to reduce the saturation problem:
 
- - Group your GPUs on a few servers rather than scattering them across many servers.
- - Shard the parameters across multiple parameter servers
- - Drop the model parameters’ float precision. This will cut the amount of data to transfer, without much impact on the convergence rate or the model’s performance.
+ - **Group your GPUs** on a few servers rather than scattering them across many servers.
+ - **Shard the parameters** across multiple parameter servers
+ - **Drop the model parameters’ float precision**. This will cut the amount of data to transfer, without much impact on the convergence rate or the model’s performance.
 
 ## CNN
 
