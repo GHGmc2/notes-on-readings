@@ -274,8 +274,21 @@ Multioutput-multiclass classification (or simply multioutput classification): it
 
 ### Linear Regression
 
+Linear Regression model prediction (vectorized form):
+$$
+\hat y=h_{\theta}(\bm x)=\theta^T \cdot \bm x
+$$
+where $\theta$ is the model’s parameter vector, $\bm x$ is the instance’s feature vector, and $h_θ$ is the hypothesis function, using the model parameters $θ$.
+
+**MSE cost function** for a Linear Regression model:
+$$
+MSE(\bm X, h_{\theta})=\frac{1}{m}\sum_{i=1}^m(\theta^T \cdot \bm x^{(i)} - y^{(i)})^2
+$$
+
+
 #### The normal equation
 
+A closed-form solution:
 $$
 \hat \theta=(X^T\cdot X)^{-1}\cdot X^T\cdot \bm y
 $$
@@ -283,11 +296,25 @@ where $\hat \theta$ is the value of $\theta$ that minimizes the cost function, $
 
 #### Computational Complexity
 
+The Normal Equation gets very **slow** when the number of **features** grows large.
+
+The equation is **linear** with regards to the number of **instances** in the training set, so it handles large training sets efficiently, provided they can fit in memory.
+
 ### Gradient Descent
 
 #### Batch Gradient Descent
 
 Computing the gradients based on the full training set.
+
+Gradient vector of the cost function:
+$$
+\nabla_{\theta}MSE(\theta)=\frac{2}{m}\bm X^T \cdot(\bm X \cdot \theta- \bm y)
+$$
+
+Gradient Descent step:
+$$
+\theta^{(next\space step)}=\theta -\eta \nabla_{\theta}MSE(\theta)
+$$
 
 #### Stochastic Gradient Descent
 
@@ -327,7 +354,7 @@ The regularization term should only be added to the cost function **during train
 
 #### Ridge Regression（岭回归）
 
-regularization term: $\alpha \sum_{i=1}^{n}\theta_i^2$
+regularization term: $\alpha\frac{1}{2} \sum_{i=1}^{n}\theta_i^2$
 
 #### Lasso Regression（套索回归）
 
@@ -335,7 +362,7 @@ regularization term: $\alpha \sum_{i=1}^n|\theta_i|$
 
 #### Elastic Net
 
-Elastic Net is a middle ground between Ridge Regression and Lasso Regression(you can control the mix ratio $r$).
+Elastic Net is a middle ground between Ridge Regression and Lasso Regression(you can control the **mix ratio $r$**).
 $$
 J(\theta)=MSE(\theta) + r\alpha \sum_{i=1}^n |\theta_i| + \frac{1-r}{2}\alpha
 \sum_{i=1}^n\theta_i^2$$
@@ -354,9 +381,14 @@ Logistic Regression model estimated probability: $\hat p = \sigma(\theta^T \cdot
 
 #### Training and Cost Function
 
-Logistic Regression cost function (log loss):
+Logistic Regression **cost function** (log loss):
 $$
 J(\theta) = -\frac{1}{m} \sum_{i=1}^m[y^{(i)}\log (\hat p^{(i)}) + (1-y^{(i)})\log (1-\hat p^{(i)})]
+$$
+
+Logistic cost function **partial derivatives**:
+$$
+\frac{\partial}{\partial \theta_j}J(\theta)=\frac{1}{m_i}\sum_{i=1}^m(\sigma(\theta^T \cdot \bm x^{(i)})-y^{(i)})x_j^{(i)}
 $$
 
 #### Decision boundaries
@@ -367,7 +399,12 @@ The Logistic Regression model can be generalized to **support multiple classes d
 
 When given an instance $x$, the Softmax Regression model first computes a score $s_k(x)$ for each class $k$, then estimates the probability of each class by applying the softmax function (also called the normalized exponential) to the scores.
 
-Softmax function:
+Softmax score for class $k$: 
+$$
+s_k(\bm x)=\theta_k^T \cdot \bm x
+$$
+
+Softmax **function**:
 $$
 \hat p_k = \frac{exp(s_k(x))}{\sum_{j=1}^{K}exp(s_j(x))}
 $$
@@ -376,7 +413,16 @@ where $K$ is the number of classes.
 The Softmax Regression classifier **predicts only one class at a time**.
 
 **Cross entropy** is frequently used to measure how well a set of estimated class probabilities match the target classes.
-Cross entropy cost function: $J(\Theta) = -\frac{1}{m} \sum_{i=1}^m \sum_{k=1}^K y_k^{(i)} \log (\hat p_k^{(i)})$, where $\Theta$ is the parameter matrix.
+
+Cross entropy **cost function** ($\Theta$ is the parameter matrix): 
+$$
+J(\Theta) = -\frac{1}{m} \sum_{i=1}^m \sum_{k=1}^K y_k^{(i)} \log (\hat p_k^{(i)})
+$$
+
+Cross entropy **gradient vector** for class k:
+$$
+\nabla_{\theta_k}J(\Theta)=\frac{1}{m}\sum_{i=1}^m(\hat p_k^{(i)}-y_k^{(i)})\bm x^{(i)}
+$$
 
 ## SVM
 
