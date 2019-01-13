@@ -895,11 +895,11 @@ A few simple steps to reduce the saturation problem:
 
 ### Convolutional Layer
 
-#### Filters(convolution kernels)
+#### Filters (convolution kernels)
 
 #### Stacking Multiple Feature Maps
 
-Within one feature map, all neurons share the same parameters (weights and bias term), but different feature maps may have different parameters.
+**Within one feature map, all neurons share the same parameters** (weights and bias term), but different feature maps may have different parameters.
 
 ### Pooling Layer
 
@@ -955,3 +955,1002 @@ decoder: a vector-to-sequence network
 > [pdf](http://www.ic.unicamp.br/~sandra/pdf/Hands_On_Machine_Learning_with_Scikit_Learn_and_TensorFlow-427-432.pdf)
 
 ## Other Popular ANN Architectures
+
+# Libs
+
+## NumPy
+> The best way to learn is to experiment with NumPy, and go through the excellent [reference documentation](https://docs.scipy.org/doc/numpy/reference/index.html).
+> [practice](https://nbviewer.jupyter.org/github/ageron/handson-ml/blob/master/tools_numpy.ipynb)
+
+Some vocabulary
+
+ - Each dimension is called an **axis**.
+ - The number of axes is called the **rank**.
+ - An array's list of axis lengths is called the **shape** of the array.
+ - The **size** of an array is the total number of elements, which is the product of all axis lengths.
+
+NumPy arrays have the type ndarrays.
+
+### Creating arrays
+
+`np.zeros` and `np.ones`:
+```py
+np.zeros((3,4))
+
+np.ones((3,4))
+```
+
+`np.full` and `np.empty`:
+```py
+np.full((3,4), np.pi)
+
+np.empty((2,3)) # its content is not predictable, as it is whatever is in memory at that point
+```
+
+`np.array`:
+```py
+np.array([[1,2,3,4], [10, 20, 30, 40]])
+```
+
+`np.arange`:
+```py
+np.arange(1, 5, 0.5)
+```
+
+**`np.linspace`**:
+It is generally preferable to use the *linspace* function instead of arange when working with floats (the maximum value is included, contrary to arange).
+```py
+np.linspace(0, 5/3, 6)
+```
+
+**`np.rand`** and **`np.randn`**:
+```py
+# random floats between 0 and 1 (uniform distribution)
+np.random.rand(3,4)
+# random floats sampled from a univariate normal distribution of mean 0 and variance 1
+np.random.randn(3,4)
+```
+
+`np.fromfunction`:  the function my_function is only called once, instead of once per element.
+```py
+def my_function(z, y, x):
+    return x * y + z
+
+np.fromfunction(my_function, (3, 2, 10))
+```
+
+### Array data
+
+**`dtype`**
+> Available data types include int8, int16, int32, int64, uint8|16|32|64, float16|32|64 and complex64|128. Check out [the documentation](http://docs.scipy.org/doc/numpy-1.10.1/user/basics.types.html) for the full list.
+
+```py
+c = np.arange(1, 5)
+print(c.dtype, c)
+```
+
+**`itemsize`**: returns the size (in bytes) of each item.
+```py
+e = np.arange(1, 5, dtype=np.complex64)
+e.itemsize
+```
+
+`data` buffer
+An array's data is actually stored in memory as a flat (one dimensional) byte buffer. It is available via the data attribute.
+```py
+f = np.array([[1,2],[1000, 2000]], dtype=np.int32)
+f.data
+```
+
+### Reshaping an array
+
+In place: just setting its `shape` attribute. **The array's size must remain the same**.
+```py
+g = np.arange(24)
+g.shape = (6, 4)
+```
+
+`reshape`: returns a new ndarray object pointing at the same data. This means that **modifying one array will also modify the other**.
+```py
+g2 = g.reshape(4,6)
+```
+
+`ravel`: returns a new one-dimensional ndarray that **also points to the same data**.
+```py
+g.ravel()
+```
+
+### Arithmetic operations
+
+All the usual arithmetic operators (+, -, *, /, //, **, etc.) can be used with ndarrays. They apply **elementwise**.
+The multiplication(`*`) is not a matrix multiplication.
+
+The arrays must have the same shape. If they do not, NumPy will apply the broadcasting rules.
+
+### Broadcasting
+
+**First rule**
+If the arrays do not have the same **rank**, then a **1 will be prepended to the smaller ranking** arrays until their ranks match.
+```py
+h = np.arange(5).reshape(1, 1, 5)
+h + [10, 20, 30, 40, 50]  # same as: h + [[[10, 20, 30, 40, 50]]]
+```
+
+**Second rule**
+Arrays with a 1 along a particular dimension act as if they had the size of the array with the largest shape along that dimension. The value of the array element is repeated along that dimension.
+```py
+k = np.arange(6).reshape(2, 3)
+k + [[100], [200]]  # same as: k + [[100, 100, 100], [200, 200, 200]]
+
+k + [100, 200, 300]  # after rule 1: [[100, 200, 300]], and after rule 2: [[100, 200, 300], [100, 200, 300]]
+k + 1000  # same as: k + [[1000, 1000, 1000], [1000, 1000, 1000]]
+```
+
+**Third rule**
+After rules 1 & 2, the sizes of all arrays must match.
+
+**Upcasting**
+When trying to combine arrays with different dtypes, NumPy will upcast to a type capable of handling all possible values (regardless of what the actual values are).
+
+### Conditional operators
+
+The conditional operators also apply **elementwise**:
+```py
+m = np.array([20, -5, 30, 40])
+m < [15, 16, 35, 36]
+# This is most useful in conjunction with boolean indexing
+m[m < 25] # array([20, -5])
+```
+
+### Mathematical and statistical functions
+
+**`ndarray` methods**
+```py
+for func in (a.mean, a.min, a.max, a.sum, a.prod, a.std, a.var):
+    print(func.__name__, "=", func())
+```
+These functions accept an optional argument axis:
+```py
+c=np.arange(24).reshape(2,3,4)
+c.sum(axis=(0,2))  # sum across matrices and columns
+```
+
+**Universal functions**
+NumPy provides fast **elementwise functions** called universal functions, or **ufunc**.
+```py
+a = np.array([[-2.5, 3.1, 7], [10, 11, 12]])
+for func in (np.square, np.abs, np.sqrt, np.exp, np.log, np.sign, np.ceil, np.modf, np.isnan, np.cos):
+    print(func(a))
+```
+
+**Binary ufuncs**
+Apply elementwise on two ndarrays. Broadcasting rules are applied if the arrays do not have the same shape.
+```py
+a = np.array([1, -2, 3, 4])
+b = np.array([2, 8, -1, 7])
+
+np.add(a, b)  # equivalent to a + b
+np.greater(a, b)  # equivalent to a > b, array([False, False,  True, False], dtype=bool)
+np.maximum(a, b) # array([2, 8, 3, 7])
+np.copysign(a, b) # array([ 1.,  2., -3.,  4.])
+```
+
+### Array indexing
+
+One-dimensional NumPy arrays can be accessed more or less like regular python arrays.
+
+**Differences with regular python arrays**
+If you assign a single value to an ndarray slice, it is **copied** across the whole slice, thanks to broadcasting rules.
+```py
+a = np.array([1, 5, 3, 19, 13, 7, 3])
+a[2:5] = -1 # array([ 1,  5, -1, -1, -1,  7,  3])
+```
+
+`ndarray` slices are actually **views** on the same data buffer. This means that if you create a slice and modify it, you are **actually going to modify the original ndarray** as well!
+```py
+a_slice = a[2:6]
+a_slice[1] = 1000 # array([   1,    5,   -1, 1000,   -1,    7,    3])
+```
+If you want a copy of the data, you need to use the copy method:
+```py
+another_slice = a[2:6].copy()
+another_slice[1] = 3000
+```
+
+**Multi-dimensional arrays**
+```py
+b = np.arange(48).reshape(4, 12)
+"""
+array([[ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11],
+       [12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
+       [24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35],
+       [36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47]])
+"""
+
+b[1, :] # returns row 1 as a 1D array of shape (12,): array([12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23])
+b[1:2, :] # returns that same row as a 2D array of shape (1, 12): array([[12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]])
+```
+
+**Fancy indexing**
+If you provide multiple index arrays, you get a 1D ndarray containing the values of the elements at the specified coordinates.
+```py
+b[(-1, 2, -1, 2), (5, 9, 1, 9)]  # returns a 1D array with b[-1, 5], b[2, 9], b[-1, 1] and b[2, 9]: array([41, 33, 37, 33])
+```
+
+**Higher dimensions**
+```py
+c = b.reshape(4,2,6)
+"""
+array([[[ 0,  1,  2,  3,  4,  5],
+        [ 6,  7,  8,  9, 10, 11]],
+
+       [[12, 13, 14, 15, 16, 17],
+        [18, 19, 20, 21, 22, 23]],
+
+       [[24, 25, 26, 27, 28, 29],
+        [30, 31, 32, 33, 34, 35]],
+
+       [[36, 37, 38, 39, 40, 41],
+        [42, 43, 44, 45, 46, 47]]])
+"""
+c[2, :, 3]  # matrix 2, all rows, col 3: array([27, 33])
+```
+
+**Ellipsis (...)**
+You may also write an ellipsis (...) to ask that all non-specified axes be entirely included.
+```py
+c[2, 1, ...]  # matrix 2, row 1, all columns.  This is equivalent to c[2, 1, :], array([30, 31, 32, 33, 34, 35])
+```
+
+**Boolean indexing**
+Provide an ndarray of boolean values on **one axis** to specify the indices that you want to access.
+```py
+b = np.arange(48).reshape(4, 12)]
+
+rows_on = np.array([True, False, True, False])
+b[rows_on, :]  # Rows 0 and 2, all columns. Equivalent to b[(0, 2), :]
+
+cols_on = np.array([False, True, False] * 4)
+b[:, cols_on]  # All rows, columns 1, 4, 7 and 10 ?
+```
+
+**np.ix_**
+You cannot use boolean indexing this way on **multiple axes**, but you can work around this by using the ix_ function:
+```py
+b[np.ix_(rows_on, cols_on)]
+
+"""
+array([[ 1,  4,  7, 10],
+       [25, 28, 31, 34]])
+"""
+```
+
+### Iterating
+
+Iterating over multidimensional arrays is done with respect to the first axis.
+```py
+c = np.arange(24).reshape(2, 3, 4)  # A 3D array (composed of two 3x4 matrices)
+for m in c:
+    print("Item:")
+    print(m)
+"""
+Item:
+[[ 0  1  2  3]
+ [ 4  5  6  7]
+ [ 8  9 10 11]]
+Item:
+[[12 13 14 15]
+ [16 17 18 19]
+ [20 21 22 23]]
+"""
+```
+
+If you want to iterate on **all elements** in the ndarray, simply iterate over the flat attribute:
+```py
+for i in c.flat:
+    print("Item:", i)
+```
+
+### Stacking arrays
+
+**`vstack`**: stack vertically
+```py
+q1 = np.full((3,4), 1.0)
+q2 = np.full((4,4), 2.0)
+q3 = np.full((3,4), 3.0)
+
+q4 = np.vstack((q1, q2, q3))
+```
+
+**`hstack`**: stack horizontally
+```py
+q5 = np.hstack((q1, q3))
+```
+
+**`concatenate`**: stacks arrays along any given existing axis
+```py
+q7 = np.concatenate((q1, q2, q3), axis=0)  # Equivalent to vstack
+```
+
+**`stack`**: stacks arrays along a new axis. All arrays have to have the same shape.
+```py
+q8 = np.stack((q1, q3))
+q8.shape # (2, 3, 4)
+```
+
+### Splitting arrays
+
+Splitting is the opposite of stacking. There is also a split function which splits an array along any given axis.
+
+```py
+r = np.arange(24).reshape(6,4)
+r1, r2, r3 = np.vsplit(r, 3)
+r4, r5 = np.hsplit(r, 2)
+```
+
+### Transposing arrays
+
+The `transpose` method creates a new view on an ndarray's data, with axes permuted in the given order.
+```py
+t = np.arange(24).reshape(4,2,3)
+"""
+array([[[ 0,  1,  2],
+        [ 3,  4,  5]],
+
+       [[ 6,  7,  8],
+        [ 9, 10, 11]],
+
+       [[12, 13, 14],
+        [15, 16, 17]],
+
+       [[18, 19, 20],
+        [21, 22, 23]]])
+"""
+t1 = t.transpose((1,2,0)) # the axes 0, 1, 2 (depth, height, width) are re-ordered to 1, 2, 0 (depth→width, height→depth, width→height)
+"""
+array([[[ 0,  6, 12, 18],
+        [ 1,  7, 13, 19],
+        [ 2,  8, 14, 20]],
+
+       [[ 3,  9, 15, 21],
+        [ 4, 10, 16, 22],
+        [ 5, 11, 17, 23]]])
+"""
+
+# By default, `transpose` reverses the order of the dimensions.
+t2 = t.transpose()  # equivalent to t.transpose((2, 1, 0))
+t2.shape # (3, 2, 4)
+
+# NumPy provides a convenience function `swapaxes` to swap two axes.
+t3 = t.swapaxes(0,1)  # equivalent to t.transpose((1, 0, 2))
+```
+
+### Linear algebra
+
+**Matrix transpose**
+```py
+m1 = np.arange(10).reshape(2,5)
+m1.T
+```
+The T attribute has no effect on rank 0 (empty) or rank 1 arrays, we can get the desired transposition by first reshaping the 1D array to a single-row matrix (2D):
+```py
+m2 = np.arange(5)
+m2r = m2.reshape(1,5)
+m2r.T
+```
+
+**Matrix dot product**
+```py
+n1 = np.arange(10).reshape(2, 5)
+n2 = np.arange(15).reshape(5, 3)
+n1.dot(n2) # n1*n2 is not a dot product, it is an elementwise product.
+```
+
+**Matrix inverse**
+Many of the linear algebra functions are available in the **`numpy.linalg` module**.
+```py
+import numpy.linalg as linalg
+
+m3 = np.array([[1,2,3],[5,7,11],[21,29,31]])
+linalg.inv(m3)
+```
+
+**Identity matrix**
+You can create an identity matrix of size NxN by calling eye:
+```py
+np.eye(3)
+"""
+array([[ 1.,  0.,  0.],
+       [ 0.,  1.,  0.],
+       [ 0.,  0.,  1.]])
+"""
+```
+
+**[QR decomposition](https://zh.wikipedia.org/wiki/QR%E5%88%86%E8%A7%A3)**
+```py
+q, r = linalg.qr(m3)
+q.dot(r)  # q.r equals m3
+```
+
+**Determinant**
+```py
+linalg.det(m3)  # Computes the det(m3) or |m3|
+```
+
+**[Eigenvalues and eigenvectors](https://zh.wikipedia.org/wiki/%E7%89%B9%E5%BE%81%E5%80%BC%E5%92%8C%E7%89%B9%E5%BE%81%E5%90%91%E9%87%8F)**
+```py
+eigenvalues, eigenvectors = linalg.eig(m3)
+m3.dot(eigenvectors) - eigenvalues * eigenvectors  # m3.v = λ*v
+```
+
+**[Singular Value Decomposition](https://zh.wikipedia.org/wiki/%E5%A5%87%E5%BC%82%E5%80%BC%E5%88%86%E8%A7%A3)**
+```py
+m4 = np.array([[1,0,0,0,2], [0,0,3,0,0], [0,0,0,0,0], [0,2,0,0,0]])
+U, S_diag, V = linalg.svd(m4)
+S = np.zeros((4, 5))
+S[np.diag_indices(4)] = S_diag
+U.dot(S).dot(V) # U.Σ.V == m4
+```
+
+**Diagonal and trace**
+```py
+np.diag(m3) # top left to bottom right
+np.trace(m3)  # equivalent to np.diag(m3).sum()
+```
+
+**Solving a system of linear scalar equations**
+The  `solve`  function solves a system of linear scalar equations, such as:
+
+-   2𝑥+6𝑦=6
+-   5𝑥+3𝑦=−9
+
+```py
+coeffs  = np.array([[2, 6], [5, 3]])
+depvars = np.array([6, -9])
+solution = linalg.solve(coeffs, depvars)
+```
+
+### Vectorization
+
+Your code is much more efficient if you try to stick to array operations. This is called vectorization. This way, you can benefit from NumPy's many optimizations.
+
+NumPy's `meshgrid` function which generates coordinate matrices from coordinate vectors.
+```py
+x_coords = np.arange(0, 1024)  # [0, 1, 2, ..., 1023]
+y_coords = np.arange(0, 768)   # [0, 1, 2, ..., 767]
+X, Y = np.meshgrid(x_coords, y_coords) # both X and Y are 768x1024 arrays, and all values in X correspond to the horizontal coordinate, while all values in Y correspond to the the vertical coordinate.
+data = np.sin(X*Y/40.5)
+```
+
+### Saving and loading
+
+Save and load ndarrays in binary or text format.
+
+**Binary `.npy` format**
+```PY
+a = np.random.rand(2,3)
+# Since the file name contains no file extension was provided, NumPy automatically added .npy.
+np.save("my_array", a)
+a_loaded = np.load("my_array.npy")
+```
+
+**Text format**
+```py
+np.savetxt("my_array.csv", a, delimiter=",")
+a_loaded = np.loadtxt("my_array.csv", delimiter=",")
+```
+
+**Zipped `.npz` format**
+```py
+b = np.arange(24, dtype=np.uint8).reshape(2, 3, 4)
+np.savez("my_arrays", my_a=a, my_b=b)
+my_arrays = np.load("my_arrays.npz")
+```
+This is a dict-like object which loads the arrays lazily:
+```py
+my_arrays.keys()
+my_arrays["my_a"]
+```
+
+## Pandas
+> Probably the best way to learn more is to **get your hands dirty** with some real-life data. It is also a good idea to go through pandas' excellent [documentation](http://pandas.pydata.org/pandas-docs/stable/index.html), in particular the [Cookbook](http://pandas.pydata.org/pandas-docs/stable/cookbook.html).
+> [practice](https://nbviewer.jupyter.org/github/ageron/handson-ml/blob/master/tools_pandas.ipynb)
+
+The pandas library provides high-performance, easy-to-use data structures and data analysis tools.
+The main data structure is the `DataFrame`, which you can think of as an in-memory 2D table (like a spreadsheet, with column names and row labels).
+
+The  `pandas`  library contains these useful data structures:
+
+-   `Series`  objects. A  `Series`  object is 1D array, similar to a column in a spreadsheet (with a column name and row labels).
+-   `DataFrame`  objects. This is a 2D table, similar to a spreadsheet (with column names and row labels).
+-   `Panel`  objects. You can see a  `Panel`  as a dictionary of  `DataFrame`s. These are less used.
+
+
+### Series objects
+
+**Similar to a 1D ndarray**
+Arithmetic operations on Series are also possible, and they apply **elementwise**:
+```py
+import pandas as pd
+
+s = pd.Series([2,-1,3,5])
+s + [1000,2000,3000,4000]
+"""
+0    1002
+1    1999
+2    3003
+3    4005
+dtype: int64
+"""
+```
+If you add a single number to a Series, that number is added to **all items** in the Series(the same is true for all binary operations such as `*` or `/`, and even `conditional operations`). This is called **broadcasting**:
+```py
+s + 1000
+"""
+0    1002
+1     999
+2    1003
+3    1005
+dtype: int64
+"""
+```
+
+**Index labels**
+Each item in a Series object has a unique identifier called the index label.
+```py
+s2 = pd.Series([68, 83, 112, 68], index=["alice", "bob", "charles", "darwin"])
+s2["bob"] # 83
+s2[1] # 83
+# It is recommended to always use the `loc` attribute when accessing by label, and the `iloc` attribute when accessing by integer location:
+s2.loc["bob"]
+s2.iloc[1]
+```
+
+Slicing a Series also slices the index labels:
+```py
+s2.iloc[1:3]
+```
+
+**Init from `dict`**
+The keys will be used as index labels:
+```py
+weights = {"alice": 68, "bob": 83, "colin": 86, "darwin": 68}
+s3 = pd.Series(weights)
+s4 = pd.Series(weights, index = ["colin", "alice"])
+```
+
+**Automatic alignment**
+When an operation involves multiple Series objects, pandas automatically aligns items by matching index labels.
+Automatic alignment is very handy when working with data that may come from various sources with varying structure and missing items.
+```py
+s2 + s3
+"""
+Index(['alice', 'bob', 'charles', 'darwin'], dtype='object')
+Index(['alice', 'bob', 'colin', 'darwin'], dtype='object')
+alice      136.0
+bob        166.0
+charles      NaN
+colin        NaN
+darwin     136.0
+dtype: float64
+"""
+```
+
+**Init with a scalar**
+All items will be set to the scalar:
+```py
+meaning = pd.Series(42, ["life", "universe", "everything"])
+```
+
+**`Series` name**
+```py
+s6 = pd.Series([83, 68], index=["bob", "alice"], name="weights")
+```
+
+**Plotting a `Series`**
+Pandas makes it easy to plot Series data using matplotlib. Just import matplotlib and call the plot() method:
+```py
+%matplotlib inline
+import matplotlib.pyplot as plt
+
+temperatures = [4.4,5.1,6.1,6.2,6.1,6.1,5.7,5.2,4.7,4.1,3.9,3.5]
+s7 = pd.Series(temperatures, name="Temperature")
+s7.plot()
+plt.show()
+```
+There are many options for plotting your data. ([Visualization](https://pandas.pydata.org/pandas-docs/stable/visualization.html))
+
+### Handling time
+
+**Time range**
+```py
+dates = pd.date_range('2016/10/29 5:30pm', periods=12, freq='H') 
+# pd.date_range() returns a DatetimeIndex that may be used as an index in a Series:
+temp_series = pd.Series(temperatures, dates)
+```
+
+**Resampling**
+Just call the resample() method and specify a new frequency:
+```py
+temp_series_freq_2H = temp_series.resample("2H")
+```
+The resampling operation is actually **a deferred operation**, which is why we did not get a `Series` object, but a `DatetimeIndexResampler` object instead.
+To actually perform the resampling operation, we can simply call the mean() method:
+```py
+temp_series_freq_2H = temp_series_freq_2H.mean()
+```
+any other aggregation function:
+```py
+temp_series_freq_2H = temp_series.resample("2H").min() # or temp_series_freq_2H = temp_series.resample("2H").apply(np.min)
+```
+
+**Upsampling and interpolation**
+Call the `interpolate()` method to fill the gaps by interpolating. The default is to use linear interpolation, but we can also select another method, such as `cubic` interpolation:
+```py
+temp_series_freq_15min = temp_series.resample("15Min").interpolate(method="cubic")
+temp_series_freq_15min.head(n=10) # `head` displays the top n values
+```
+
+**Timezones**
+Make datetimes timezone aware by calling the tz_localize() method:
+```py
+temp_series_ny = temp_series.tz_localize("America/New_York")
+```
+We can convert these datetimes to Paris time:
+```py
+temp_series_paris = temp_series_ny.tz_convert("Europe/Paris")
+```
+Using the `ambiguous` argument we can tell pandas to infer the right DST (Daylight Saving Time) based on the order of the ambiguous timestamps:
+```py
+temp_series_paris_naive.tz_localize("Europe/Paris", ambiguous="infer")
+```
+
+**Periods**
+The `pd.period_range()` function returns a `PeriodIndex` instead of a `DatetimeIndex`.
+```py
+quarters = pd.period_range('2016Q1', periods=8, freq='Q')
+```
+The asfreq() method lets us change the frequency of the PeriodIndex. All periods are lengthened or shortened accordingly.
+```py
+quarters.asfreq("M", how="start")
+```
+We can create a Series with a PeriodIndex:
+```py
+quarterly_revenue = pd.Series([300, 320, 290, 390, 320, 360, 310, 410], index = quarters)
+```
+We can convert periods to timestamps by calling `to_timestamp`:
+```py
+last_hours = quarterly_revenue.to_timestamp(how="end", freq="H")
+```
+And back to periods by calling to_period:
+```py
+last_hours.to_period()
+```
+
+### `DataFrame` objects
+
+A `DataFrame` object represents a spreadsheet, with cell values, column names and row index labels. You can see `DataFrame`s as dictionaries of `Series`.
+
+**Creating a `DataFrame`**
+You can create a DataFrame by passing a dictionary of Series objects:
+```py
+people_dict = {
+    "weight": pd.Series([68, 83, 112], index=["alice", "bob", "charles"]),
+    "birthyear": pd.Series([1984, 1985, 1992], index=["bob", "alice", "charles"], name="year"),
+    "children": pd.Series([0, 3], index=["charles", "bob"]),
+    "hobby": pd.Series(["Biking", "Dancing"], index=["alice", "bob"]),
+}
+people = pd.DataFrame(people_dict)
+```
+
+You can access columns pretty much as you would expect. They are returned as `Series` objects:
+```py
+people[["birthyear", "hobby"]]
+```
+
+**Multi-indexing**
+If all columns are tuples of the same size, then they are understood as a multi-index.
+
+**Dropping a level**
+We can drop a column or indices level by calling droplevel():
+```py
+d5.columns = d5.columns.droplevel(level = 0)
+```
+
+**Transposing**
+Swap columns and indices using the T attribute:
+```py
+d6 = d5.T
+```
+
+**Stacking and unstacking levels**
+Calling the stack() method will push the lowest column level after the lowest index:
+```py
+d7 = d6.stack()
+d8 = d7.unstack() # unstack() does the reverse
+```
+
+The stack() and unstack() methods let you select the level to stack/unstack. You can even stack/unstack multiple levels at once:
+```py
+d10 = d9.unstack(level = (0,1))
+```
+
+**Most methods return modified copies**
+The stack() and unstack() methods do not modify the object they apply to. Instead, they work on a copy and return that copy. This is true of **most** methods in pandas.
+
+**Accessing rows**
+```py
+people[people["birthyear"] < 1990]
+```
+
+**Adding and removing columns**
+You can generally treat DataFrame objects like dictionaries of Series:
+```py
+people
+
+people["age"] = 2018 - people["birthyear"]  # adds a new column "age"
+people["over 30"] = people["age"] > 30      # adds another column "over 30"
+birthyears = people.pop("birthyear")
+del people["children"]
+```
+
+When you add a new column (added at the end by default), it must have the same number of rows.
+
+You can also insert a column anywhere else using the insert() method:
+```py
+people.insert(1, "height", [172, 181, 185])
+```
+
+**Assigning new columns**
+The assign() method returns a new DataFrame object, the original is not modified:
+```py
+people.assign(
+    body_mass_index = people["weight"] / (people["height"] / 100) ** 2,
+    has_pets = people["pets"] > 0
+)
+```
+You cannot access columns created within the same assignment, the solution is to split this assignment in two consecutive assignments:
+```py
+d6 = people.assign(body_mass_index = people["weight"] / (people["height"] / 100) ** 2)
+d6.assign(overweight = d6["body_mass_index"] > 25)
+```
+
+You may want to just chain the assignment calls, pass a function to the assign() method (typically **a lambda function**), and this function will be called with the DataFrame as a parameter:
+```py
+(people
+     .assign(body_mass_index = lambda df: df["weight"] / (df["height"] / 100) ** 2)
+     .assign(overweight = lambda df: df["body_mass_index"] > 25)
+)
+```
+
+**Evaluating an expression**
+This relies on the `numexpr` library which must be installed.
+```py
+people.eval("body_mass_index = weight / (height/100) ** 2", inplace=True) # set inplace=True to directly modify the DataFrame rather than getting a modified copy
+```
+You can use a local or global variable in an expression by prefixing it with '@':
+```py
+overweight_threshold = 30
+people.eval("overweight = body_mass_index > @overweight_threshold", inplace=True)
+```
+
+**Querying a `DataFrame`**
+```py
+people.query("age > 30 and pets == 0")
+```
+
+**Sorting a `DataFrame`**
+`sort_index` returned a sorted copy of the `DataFrame`.
+```py
+people.sort_index(ascending=False, axis=1, inplace=True) # By default it sorts the rows by their index label, in ascending order.
+```
+To sort the DataFrame by the values instead of the labels, we can use sort_values:
+```py
+people.sort_values(by="age", inplace=True)
+```
+
+**Plotting a DataFrame**
+The best option is to scroll through the [Visualization](https://pandas.pydata.org/pandas-docs/stable/visualization.html) page, find the plot you are interested in and look at the example code.
+
+**Operations on DataFrames**
+You can apply NumPy mathematical functions on a DataFrame: **the function is applied to all values**:
+```py
+grades_array = np.array([[8,8,9],[10,9,9],[4, 8, 2], [9, 10, 10]])
+grades = pd.DataFrame(grades_array, columns=["sep", "oct", "nov"], index=["alice","bob","charles","darwin"])
+np.sqrt(grades)
+```
+Aggregation operations of a DataFrame **apply to each column**, and you get back a Series object:
+```py
+grades.mean()
+```
+The `all` method is also an aggregation operation: it checks whether all values are True or not.
+```py
+(grades > 5).all(axis = 1)
+```
+The `any` method returns True if any value is True.
+```py
+(grades == 10).any(axis = 1)
+```
+If you add a `Series` object to a `DataFrame` (or execute any other binary operation), pandas attempts to **broadcast the operation to all rows** in the `DataFrame`. This only works if the `Series` has the same size as the `DataFrames` rows.
+```py
+grades - grades.mean()  # equivalent to: grades - [7.75, 8.75, 7.50]
+```
+
+**Automatic alignment**
+When operating on multiple DataFrames, pandas automatically aligns them **by row index label, but also by column names.**
+```py
+bonus_array = np.array([[0,np.nan,2],[np.nan,1,0],[0, 1, 0], [3, 3, 0]])
+bonus_points = pd.DataFrame(bonus_array, columns=["oct", "nov", "dec"], index=["bob","colin", "darwin", "charles"])
+```
+
+**Handling missing data**
+```py
+(grades + bonus_points).fillna(0)
+```
+Another way to handle missing data is to interpolate.
+```py
+bonus_points.interpolate(axis=1) # By default, it interpolates vertically (axis=0)
+```
+Call the dropna() method to get rid of rows that are full of NaNs:
+```py
+final_grades_clean = final_grades_clean.dropna(axis=1, how="all")
+```
+
+**Aggregating with `groupby`**
+```py
+grouped_grades = final_grades.groupby("hobby")
+```
+
+**Pivot tables**
+Call the pd.pivot_table() function for this DataFrame, asking to group by the name column.
+```py
+pd.pivot_table(more_grades, index="name", values="grade", columns="month", margins=True) # By default, pivot_table() computes the mean of each numeric column:
+```
+We can specify multiple index or column names, and pandas will create multi-level indices:
+```py
+pd.pivot_table(more_grades, index=("name", "month"), margins=True)
+```
+
+**Overview functions**
+```py
+large_df.head() # The head() method returns the top 5 rows:
+large_df.tail(n=2) # a tail() function to view the bottom 5 rows. You can pass the number of rows you want
+large_df.info() # The info() method prints out a summary of each columns contents:
+```
+The describe() method gives a nice overview of the main aggregated values over each column:
+-   `count`: number of non-null (not NaN) values
+-   `mean`: mean of non-null values
+-   `std`:  [standard deviation](https://en.wikipedia.org/wiki/Standard_deviation)  of non-null values
+-   `min`: minimum of non-null values
+-   `25%`,  `50%`,  `75%`: 25th, 50th and 75th  [percentile](https://en.wikipedia.org/wiki/Percentile)  of non-null values
+-   `max`: maximum of non-null values
+```py
+large_df.describe()
+```
+
+### Saving & loading
+
+Pandas can save DataFrames to various backends, including file formats such as CSV, Excel, JSON, HTML and HDF5, or to a SQL database.
+
+**Saving**
+```py
+my_df = pd.DataFrame(
+    [["Biking", 68.5, 1985, np.nan], ["Dancing", 83.1, 1984, 3]], 
+    columns=["hobby","weight","birthyear","children"],
+    index=["alice", "bob"]
+)
+my_df.to_csv("my_df.csv")
+my_df.to_html("my_df.html")
+my_df.to_json("my_df.json")
+```
+
+**Loading**
+```py
+my_df_loaded = pd.read_csv("my_df.csv", index_col=0)
+```
+There are similar read_json, read_html, read_excel functions as well. We can also read data straight from the Internet.
+
+### Combining DataFrames
+
+**SQL-like joins**
+```py
+city_loc = pd.DataFrame(
+    [
+        ["CA", "San Francisco", 37.781334, -122.416728],
+        ["NY", "New York", 40.705649, -74.008344],
+        ["FL", "Miami", 25.791100, -80.320733],
+        ["OH", "Cleveland", 41.473508, -81.739791],
+        ["UT", "Salt Lake City", 40.755851, -111.896657]
+    ], columns=["state", "city", "lat", "lng"])
+
+city_pop = pd.DataFrame(
+    [
+        [808976, "San Francisco", "California"],
+        [8363710, "New York", "New-York"],
+        [413201, "Miami", "Florida"],
+        [2242193, "Houston", "Texas"]
+    ], index=[3,4,5,6], columns=["population", "city", "state"])
+
+pd.merge(left=city_loc, right=city_pop, on="city") # INNER JOIN.
+all_cities = pd.merge(left=city_loc, right=city_pop, on="city", how="outer") # FULL OUTER JOIN, and `how="left"` for LEFT OUTER JOIN, `how="right"` for RIGHT OUTER JOIN
+```
+
+If the key to join on is actually in one (or both) DataFrame's index, you must use left_index=True and/or right_index=True. If the key column names differ, you must use left_on and right_on.
+```py
+city_pop2 = city_pop.copy()
+city_pop2.columns = ["population", "name", "state"]
+pd.merge(left=city_loc, right=city_pop2, left_on="city", right_on="name")
+```
+
+**Concatenation**
+```py
+result_concat = pd.concat([city_loc, city_pop])
+```
+
+`concat()` aligns the data horizontally (by columns) but not vertically (by rows). We may end up with multiple rows having the same index. Or you can tell pandas to just ignore the index:
+```py
+pd.concat([city_loc, city_pop], ignore_index=True)
+```
+
+The `append()` method is a useful shorthand for concatenating DataFrames vertically, it works on a **copy** and returns the modified copy.
+```py
+city_loc.append(city_pop)
+```
+
+### Categories
+
+```py
+city_eco = city_pop.copy()
+city_eco["eco_code"] = [17, 17, 34, 20]
+city_eco["economy"] = city_eco["eco_code"].astype('category')
+city_eco["economy"].cat.categories = ["Finance", "Energy", "Tourism"]
+```
+
+## Matplotlib
+> The best way to learn more, is to visit the [gallery](http://matplotlib.org/gallery.html), look at the images, choose a plot that you are interested in, then just copy the code in a Jupyter notebook and play around with it.
+> [practice](https://nbviewer.jupyter.org/github/ageron/handson-ml/blob/master/tools_matplotlib.ipynb)
+
+Matplotlib can output graphs using various backend graphics libraries, such as Tk, wxPython, etc.
+
+### Plotting your first graph
+
+When running python using the command line, the graphs are typically shown in a separate window. In a Jupyter notebook, we can simply output the graphs within the notebook itself by running the `%matplotlib inline` magic command.
+```py
+import matplotlib
+
+%matplotlib inline
+```
+
+### Line style and color
+
+### Saving a figure
+
+### Subplots
+
+### Multiple figures
+
+### Pyplot's state machine: implicit vs explicit
+
+### Drawing text
+
+### Legends
+
+### Non linear scales
+
+### Ticks and tickers
+
+### Polar projection
+
+### 3D projection
+
+### Scatter plot
+
+### Lines
+
+### Histograms
+
+### Images
+
+### Animations
+
+### Saving animations to video files
