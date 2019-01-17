@@ -2,38 +2,124 @@
 > [官网](https://dataintensive.net/), [references](https://github.com/ept/ddia-references), [errata](https://www.oreilly.com/catalog/errata.csp?isbn=0636920032175)
 > [翻译](https://github.com/Vonng/ddia)
 > [douban](https://book.douban.com/subject/26197294/)
+> dig deeper than buzzwords!
 
 ## Preface
 
+Fortunately, behind the rapid changes in technology, there are enduring principles that remain true. If you understand those principles, you’re in a position to see where each tool fits in, how to make good use of it, and how to avoid its pitfalls.
 
+We look primarily at the **architecture** of data systems and the ways they are integrated into data-intensive applications.
 
 # Foundations of Data System
 
 ## Reliable, Scalable, and Maintainable Applications
 
+Many applications today are data-intensive. Raw CPU power is rarely a limiting factor for these applications—bigger problems are usually **the amount of data, the complexity of data, and the speed at which it is changing**.
+
+The fundamentals of what we are trying to achieve: reliable, scalable, and maintainable data systems.
+
+ - Reliability: The system should continue to work correctly (performing the correct function at the desired level of performance) even in the face of adversity (hardware or software faults, and even human error).
+ - Scalability: As the system grows (in data volume, traffic volume, or complexity), there should be reasonable ways of dealing with that growth.
+ - Maintainability: Over time, many different people will work on the system (engineering and operations, both maintaining current behavior and adapting the system to new use cases), and they should all be able to work on it productively.
+
+### Thinking About Data Systems
+
 ### Reliability
+
+The things that can go wrong are called **faults**, and systems that anticipate faults and can cope with them are called **fault-tolerant** or **resilient**.
+
+A **fault** is usually defined as **one component** of the system deviating from its spec, whereas a **failure** is when the **system as a whole** stops providing the required service to the user.
+It is impossible to reduce the probability of a fault to zero; therefore it is usually best to **design fault-tolerance mechanisms that prevent faults from causing failures**.
+
+[Chaos Monkey: a resiliency tool that helps applications tolerate random instance failures](https://github.com/Netflix/chaosmonkey)
+
+We generally prefer **tolerating** faults over **preventing** faults, but there are cases (with security matters) where prevention is better than cure.
+
+This book mostly deals with the kinds of faults that can be cured.
 
 #### Hardware Faults
 
+Ways:
+
+ - add **redundancy** to the individual **hardware** components
+ - **software fault-tolerance**
+
+We usually think of hardware faults as being random and independent from each other.
+
 #### Software Errors
+
+Systematic errors within the system are harder to anticipate, and because they are **correlated** across nodes, they tend to cause many more system failures than uncorrelated hardware faults.
 
 #### Human Errors
 
+How do we make our systems reliable, in spite of unreliable humans? The best systems combine several approaches:
+
+ - Design systems in a way that **minimizes opportunities for error**.
+ - **Decouple** the places where people make the most mistakes from the places where they can cause failures.
+ - **Test thoroughly** at all levels, from unit tests to whole-system integration tests and manual tests.
+ - Allow **quick and easy recovery** from human errors, to minimize the impact in the case of a failure.
+ - Set up detailed and clear **monitoring**, such as performance metrics and error rates.
+ - Implement good **management** practices and training.
+
+#### How Important Is Reliability?
+
 ### Scalability
+
+Scalability is the term we use to describe a system’s **ability to cope with increased load**.
 
 #### Describing Load
 
+load parameters.
+
 #### Describing Performance
+
+The **response time** is what the client sees: besides the actual time to process the request (the service time), it includes network delays and queueing delays.
+**Latency** is the duration that a request is waiting to be handled—during which it is latent, await‐ing service.
+
+Usually it is better to use **percentiles**. If you take your list of response times and sort it from fastest to slowest, then the median is the halfway point, this makes the median a good metric if you want to know how long users typically have to wait.
+
+High percentiles of response times, also known as tail latencies, are important because they directly affect users’ experience of the service.
 
 #### Approaches for Coping with Load
 
+Scaling up: vertical scaling, moving to a more powerful machine.
+Scaling out: horizontal scaling, distributing the load across multiple smaller machines.
+
+Distributing load across multiple machines is also known as a **shared-nothing architecture**.
+
+While distributing **stateless** services across multiple machines is fairly straightforward, taking **stateful** data systems from a single node to a distributed setup can introduce a lot of additional complexity.
+
+If you are working on a fast-growing service, it is therefore likely that you will need to rethink your architecture on every order of magnitude load increase — or perhaps even more often than that.
+In an early-stage startup or an unproven product it’s usually more important to be able to iterate quickly on product features than it is to scale to some hypothetical future load.
+
 ### Maintainability
 
-#### Operability
+three design principles for software systems:
 
-#### Simplicity
+ - Operability: make it easy for operations teams to keep the system running smoothly.
+ - Simplicity: make it easy for new engineers to understand the system, by removing as much complexity as possible from the system. (Note this is not the same as simplicity of the user interface.)
+ - Evolvability: make it easy for engineers to make changes to the system in the future, adapting it for unanticipated use cases as requirements change. Also known as extensibility, modifiability, or plasticity.
 
-#### Evolvability
+#### Operability: Making Life Easy for Operations
+
+Good operability means making routine tasks easy, allowing the operations team to focus their efforts on high-value activities.
+Data systems can do various things to make routine tasks easy, including:
+
+ - Providing visibility into the runtime behavior and internals of the system, with good monitoring.
+ - Providing good support for automation and integration with standard tools.
+ - Avoiding dependency on individual machines.
+ - Providing good documentation and an easy-to-understand operational model.
+ - Providing good default behavior, but also giving administrators the freedom to override defaults when needed.
+ - Self-healing where appropriate, but also giving administrators manual control over the system state when needed.
+ - Exhibiting predictable behavior, minimizing surprises.
+
+#### Simplicity: Managing Complexity
+
+Making a system simpler does not necessarily mean reducing its functionality; it can also mean removing accidental complexity.
+
+One of the best tools we have for removing accidental complexity is **abstraction**.
+
+#### Evolvability: Making Change Easy
 
 ## Data Models and Query Languages
 
