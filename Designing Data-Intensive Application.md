@@ -127,7 +127,21 @@ One of the best tools we have for removing accidental complexity is **abstractio
 
 ### Query Languages for Data
 
+#### Declarative Queries on the Web
+
+#### MapReduce Querying
+
 ### Graph-Like Data Models
+
+#### Property Graphs
+
+#### The Cypher Query Language
+
+#### Graph Queries in SQL
+
+#### Triple-Stores and SPARQL
+
+#### The Foundation: Datalog
 
 ### Summary
 
@@ -524,13 +538,35 @@ Three different types of systems:
 
 #### The Unix Philosophy
 
+##### A uniform interface
+
+##### Separation of logic and wiring
+
+##### Transparency and experimentation
+
 ### MapReduce and Distributed Filesystems
 
 #### MapReduce Job Execution
 
 #### Reduce-Side Joins and Grouping
 
+##### Sort-merge joins
+
+##### Bringing related data together in the same place
+
+##### GROUP BY
+
+##### Handling skew
+
 #### Map-Side Joins
+
+##### Broadcast hash joins
+
+##### Partitioned hash joins
+
+##### Map-side merge joins
+
+##### MapReduce workflows with map-side joins
 
 #### The Output of Batch Workflows
 
@@ -540,7 +576,27 @@ Three different types of systems:
 
 #### Materialization of Intermediate State
 
+The process of writing out this intermediate state to files is called **materialization**.
+
+##### Dataflow engines
+
+They **handle an entire workflow as one job**, rather than breaking it up into independent subjobs.
+
+##### Fault tolerance
+
+Spark uses the RDD abstraction for tracking the ancestry of data, while Flink checkpoints operator state, allowing it to resume running an operator that ran into a fault during its execution.
+
+When recomputing data, it is important to know whether the computation is **deterministic**.
+
+##### Discussion of materialization
+
 #### Graphs and Iterative Processing
+
+##### The Pregel processing model
+
+##### Fault tolerance
+
+##### Parallel execution
 
 #### High-Level APIs and Languages
 
@@ -567,6 +623,18 @@ This restriction allows the framework to hide some of the hard distributed syste
 #### Messaging Systems
 
 #### Partitioned Logs
+
+##### Using logs for message storage
+
+A **log** is simply an **append-only** sequence of records on disk.
+
+A producer sends a message by appending it to the end of the log, and a consumer receives messages by reading the log sequentially.
+
+The log can be **partitioned**. Different partitions can then be hosted on different machines, making each partition a separate log that can be read and written **independently** from other partitions. A **topic** can then be defined as a group of partitions that all carry messages of the same type.
+
+Within each partition, the broker assigns a monotonically increasing sequence number, or **offset**, to every message. A partition is append-only, so the messages within a partition are totally ordered. There is no ordering guarantee across different partitions.
+
+##### Logs compared to traditional messaging
 
 ### Databases and Streams
 
