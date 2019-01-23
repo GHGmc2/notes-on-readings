@@ -2,13 +2,19 @@
 > [Python Data Science Handbook](https://jakevdp.github.io/PythonDataScienceHandbook/), [Github](https://github.com/jakevdp/PythonDataScienceHandbook)
 > [douban](https://book.douban.com/subject/27667378/)
 
-# [SciPy](https://www.scipy.org/)
+## 资源
+
+[Numpy复习总结：一](https://zhuanlan.zhihu.com/p/32955108)、[二](https://zhuanlan.zhihu.com/p/33045644)
+[pandas复习总结：一](https://zhuanlan.zhihu.com/p/33122239)、[二](https://zhuanlan.zhihu.com/p/33229372)
+[matplotlib复习总结](https://zhuanlan.zhihu.com/p/33299777)
+
+### [SciPy](https://www.scipy.org/)
 
 Core packages:
  - **NumPy**: Base N-dimensional array package
  - SciPy library: Fundamental library for scientific computing
  - **Matplotlib**: Comprehensive 2D Plotting
- - **IPython**: Enhanced Interactive Console
+ - IPython: Enhanced Interactive Console
  - Sympy: Symbolic mathematics
  - **pandas**: Data structures & analysis
 
@@ -177,8 +183,32 @@ NumPy 中的**向量**操作是通过通用函数（ufunc）实现的（将作�
 
 ### 三维图
 
-## Scikit-Learn
+## 机器学习
 
-### 数据表示
+### Scikit-Learn简介
 
-### 评估器API
+#### 数据表示
+
+#### 评估器API
+
+### 超参数与模型验证
+
+### 特征工程
+
+### 朴素贝叶斯分类
+
+### 线性回归
+
+### SVM
+
+### 决策树与随机森林
+
+### PCA
+
+### 流形学习
+
+### k-means聚类
+
+### 高斯混合模型
+
+### 核密度估计
