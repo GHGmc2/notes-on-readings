@@ -4,6 +4,7 @@
 
 * Go语言学习笔记
 * 21天学通C++（第8版）
+* Effective C++
 * Python编程快速上手
 * Python数据科学手册
 * Python神经网络编程
